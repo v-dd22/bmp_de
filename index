@@ -6,7 +6,7 @@
 <title>TradeFlow — Business Management Platform</title>
 
 <!-- Firebase SDK -->
-<script type="module">
+<!-- <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword }
     from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -216,7 +216,54 @@
 
   console.log("Firebase initialized. Configure firebaseConfig above with your project credentials.");
 </script>
+ -->
+<script type="module">
+  // ✅ Firebase Imports (ONLY ONCE)
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword }
+    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { getFirestore, doc, getDoc, setDoc }
+    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+  // ✅ Your Firebase Config (already correct)
+  const firebaseConfig = {
+    apiKey: "AIzaSyBNzUTuem8ZfOI8dG8I5BCMqrusgFpW-qA",
+    authDomain: "bmp-de.firebaseapp.com",
+    projectId: "bmp-de",
+    storageBucket: "bmp-de.firebasestorage.app",
+    messagingSenderId: "321766515857",
+    appId: "1:321766515857:web:11cf4a934336467fe18b30"
+  };
+
+  // ✅ Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  // ✅ Make functions GLOBAL (VERY IMPORTANT)
+  window.doLogin = async function(email, password) {
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      alert("Login successful");
+    } catch (e) {
+      alert("Login failed: " + e.message);
+    }
+  };
+
+  window.doLogout = function() {
+    signOut(auth);
+  };
+
+  // ✅ Auth State Listener
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      console.log("Logged in:", user.email);
+    } else {
+      console.log("Logged out");
+    }
+  });
+
+</script>
 <style>
 /* ─── FONTS ─────────────────────────────────────────────────────────────── */
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Syne:wght@600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
