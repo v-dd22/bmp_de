@@ -6,7 +6,7 @@
 <title>TradeFlow — Business Management Platform</title>
 
 <!-- Firebase SDK -->
-<!-- <script type="module">
+<script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword }
     from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -50,11 +50,13 @@
       const data = snap.exists() ? snap.data() : { role: "sales", name: user.email };
       window.APP.user = { uid: user.uid, email: user.email, ...data };
       window.APP.userRole = data.role || "sales";
-      showApp();
+      if (typeof showApp === 'function') showApp();
+      else window.addEventListener('appReady', () => showApp());
     } else {
       window.APP.user = null;
       window.APP.userRole = null;
-      showLogin();
+      if (typeof showLogin === 'function') showLogin();
+      else window.addEventListener('appReady', () => showLogin());
     }
   });
 
@@ -113,7 +115,7 @@
     }, { merge: true });
 
     await batch.commit();
-    showToast("Purchase recorded successfully", "success");
+    safeToast("Purchase recorded successfully", "success");
   };
 
   window.addSale = async (data) => {
@@ -140,7 +142,7 @@
     }, { merge: true });
 
     await batch.commit();
-    showToast("Sale recorded successfully", "success");
+    safeToast("Sale recorded successfully", "success");
   };
 
   window.recordVendorPayment = async (vendorId, vendorName, amount, note) => {
@@ -151,7 +153,7 @@
     const vendorRef = doc(db, "companies", cid, "vendors", vendorId);
     batch.set(vendorRef, { payable: increment(-amount), updatedAt: serverTimestamp() }, { merge: true });
     await batch.commit();
-    showToast("Vendor payment recorded", "success");
+    safeToast("Vendor payment recorded", "success");
   };
 
   window.recordCustomerReceipt = async (customerId, customerName, amount, note) => {
@@ -162,13 +164,13 @@
     const custRef = doc(db, "companies", cid, "customers", customerId);
     batch.set(custRef, { receivable: increment(-amount), updatedAt: serverTimestamp() }, { merge: true });
     await batch.commit();
-    showToast("Customer receipt recorded", "success");
+    safeToast("Customer receipt recorded", "success");
   };
 
   window.addExpense = async (data) => {
     const cid = window.APP.activeCompany;
     await addDoc(collection(db, "companies", cid, "expenses"), { ...data, createdAt: serverTimestamp() });
-    showToast("Expense added", "success");
+    safeToast("Expense added", "success");
   };
 
   // ─── REALTIME LISTENERS ──────────────────────────────────────────────────
@@ -185,7 +187,7 @@
     try {
       await signInWithEmailAndPassword(auth, email, password);
     } catch (e) {
-      showToast("Login failed: " + e.message, "error");
+      safeToast("Login failed: " + e.message, "error");
     }
   };
 
@@ -195,15 +197,15 @@
     try {
       const cred = await createUserWithEmailAndPassword(auth, email, password);
       await setDoc(doc(db, "users", cred.user.uid), { name, role, email, createdAt: serverTimestamp() });
-      showToast(`User ${name} created with role: ${role}`, "success");
+      safeToast(`User ${name} created with role: ${role}`, "success");
     } catch (e) {
-      showToast("Error creating user: " + e.message, "error");
+      safeToast("Error creating user: " + e.message, "error");
     }
   };
 
   // ─── EXPORT HELPERS ───────────────────────────────────────────────────────
   window.exportToCSV = (data, filename) => {
-    if (!data || data.length === 0) { showToast("No data to export", "error"); return; }
+    if (!data || data.length === 0) { safeToast("No data to export", "error"); return; }
     const keys = Object.keys(data[0]).filter(k => k !== 'id');
     const csv = [keys.join(","), ...data.map(row =>
       keys.map(k => `"${String(row[k] ?? '').replace(/"/g, '""')}"`).join(",")
@@ -214,56 +216,15 @@
     a.click();
   };
 
-  console.log("Firebase initialized. Configure firebaseConfig above with your project credentials.");
+  // Safe wrapper for showToast called from within the module
+  function showToast(msg, type) {
+    if (typeof showToast === 'function') showToast(msg, type);
+    else console.warn('[TradeFlow]', type, msg);
+  }
+
+  console.log("Firebase module loaded successfully.");
 </script>
- -->
-<script type="module">
-  // ✅ Firebase Imports (ONLY ONCE)
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword }
-    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-  import { getFirestore, doc, getDoc, setDoc }
-    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-  // ✅ Your Firebase Config (already correct)
-  const firebaseConfig = {
-    apiKey: "AIzaSyBNzUTuem8ZfOI8dG8I5BCMqrusgFpW-qA",
-    authDomain: "bmp-de.firebaseapp.com",
-    projectId: "bmp-de",
-    storageBucket: "bmp-de.firebasestorage.app",
-    messagingSenderId: "321766515857",
-    appId: "1:321766515857:web:11cf4a934336467fe18b30"
-  };
-
-  // ✅ Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-
-  // ✅ Make functions GLOBAL (VERY IMPORTANT)
-  window.doLogin = async function(email, password) {
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-      alert("Login successful");
-    } catch (e) {
-      alert("Login failed: " + e.message);
-    }
-  };
-
-  window.doLogout = function() {
-    signOut(auth);
-  };
-
-  // ✅ Auth State Listener
-  onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      console.log("Logged in:", user.email);
-    } else {
-      console.log("Logged out");
-    }
-  });
-
-</script>
 <style>
 /* ─── FONTS ─────────────────────────────────────────────────────────────── */
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Syne:wght@600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
@@ -2088,6 +2049,9 @@ function exportCurrentData(type) {
   };
   exportToCSV(maps[type], type + "_" + new Date().toISOString().split("T")[0]);
 }
+
+// ─── SIGNAL MODULE THAT UI IS READY ──────────────────────────────────────
+window.dispatchEvent(new Event('appReady'));
 
 // ─── KEYBOARD SHORTCUTS ───────────────────────────────────────────────────
 document.addEventListener("keydown", e => {
